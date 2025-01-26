@@ -128,7 +128,7 @@
            WRITE FILE-NUMBER-RECORD
            CLOSE FILE-NUMBER-FILE.
 
-       WEDDING-PLAN-MANAGEMENT.
+              WEDDING-PLAN-MANAGEMENT.
            PERFORM CLEAR-SCREEN
            DISPLAY "--------------------------------------------------"
            DISPLAY "                 Wedding Plan Management"
@@ -146,7 +146,7 @@
                WHEN 1
                    PERFORM CLEAR-SCREEN
                    DISPLAY "Managing Guest List..."
-                   PERFORM WEDDING-PLAN-MANAGEMENT
+                   PERFORM CALL-GUEST-LIST
                WHEN 2
                    PERFORM CLEAR-SCREEN
                    DISPLAY "Managing Tasks..."
@@ -168,8 +168,13 @@
                    PERFORM WEDDING-PLAN-MANAGEMENT
            END-EVALUATE.
 
+       CALL-GUEST-LIST.
+           CALL 'GUEST-LIST' USING wedding-name
+           END-CALL.
+
        CLEAR-SCREEN.
            CALL 'SYSTEM' USING 'clear' 
            IF RETURN-CODE NOT = 0
                CALL 'SYSTEM' USING 'cls'       
            END-IF.
+
