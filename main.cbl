@@ -2,6 +2,10 @@
        PROGRAM-ID. WeddingPlanner.
 
        ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       REPOSITORY.
+           FUNCTION ALL INTRINSIC.
+
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT FILE-NUMBER-FILE 
@@ -25,7 +29,7 @@
        01 FOLDER-GENERATION-VARS.
            05 CURRENT-YEAR        PIC X(4).
            05 FIRST-LETTER        PIC X.
-           05 NUM-FILE-NO PIC 9(3).
+           05 NUM-FILE-NO         PIC 9(3).
            05 FILE-NUMBER         PIC X(3).
            05 FOLDER-NAME         PIC X(12).
 
@@ -128,7 +132,7 @@
            WRITE FILE-NUMBER-RECORD
            CLOSE FILE-NUMBER-FILE.
 
-              WEDDING-PLAN-MANAGEMENT.
+       WEDDING-PLAN-MANAGEMENT.
            PERFORM CLEAR-SCREEN
            DISPLAY "--------------------------------------------------"
            DISPLAY "                 Wedding Plan Management"
@@ -144,9 +148,9 @@
 
            EVALUATE plan-choice
                WHEN 1
-                   PERFORM CLEAR-SCREEN
-                   DISPLAY "Managing Guest List..."
-                   PERFORM CALL-GUEST-LIST
+                   *> Modify this line to CALL the Guest List Management program
+                   CALL "GUEST-LIST-MANAGEMENT"
+                   PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 2
                    PERFORM CLEAR-SCREEN
                    DISPLAY "Managing Tasks..."
@@ -168,13 +172,13 @@
                    PERFORM WEDDING-PLAN-MANAGEMENT
            END-EVALUATE.
 
-       CALL-GUEST-LIST.
-           CALL 'GUEST-LIST' USING wedding-name
-           END-CALL.
-
        CLEAR-SCREEN.
            CALL 'SYSTEM' USING 'clear' 
            IF RETURN-CODE NOT = 0
                CALL 'SYSTEM' USING 'cls'       
            END-IF.
 
+       END PROGRAM WeddingPlanner.
+
+       
+       
