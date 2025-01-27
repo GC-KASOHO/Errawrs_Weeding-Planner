@@ -231,6 +231,8 @@
                        DISPLAY "---------------------------------------------"
            END-PERFORM.
 
+       CLEAR-SCREEN.
+           CALL "SYSTEM" USING "cls".
        RETURN-TO-MAIN-MENU.
            DISPLAY "Exiting Budget Tracker. Goodbye!"
            STOP RUN.
