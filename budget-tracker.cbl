@@ -5,7 +5,7 @@
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT BUDGET-FILE 
-               ASSIGN TO "C:\Users\Administrator\Downloads\Errawrs_Weeding-Planner\budget-tracker.txt"
+               ASSIGN TO "C:\Users\Administrator\Downloads\Errawrs_Weeding-Planner\budget.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                ACCESS MODE IS SEQUENTIAL
                FILE STATUS IS WS-FILE-STATUS.
@@ -59,9 +59,9 @@
            CLOSE BUDGET-FILE.
 
        MANUAL-FILE-CREATE.
-           CALL "system" USING BY REFERENCE "touch C:\Users\Administrator\Downloads\Errawrs_Weeding-Planner\budget-tracker.txt"
+           CALL "system" USING BY REFERENCE "touch C:\Users\Administrator\Downloads\Errawrs_Weeding-Planner\budget.txt"
            CALL "system" USING BY REFERENCE 
-               "echo 'Category,Estimated Budget,Actual Expense,Date,Description' > C:\Users\Administrator\Downloads\Errawrs_Weeding-Planner\budget-tracker.txt".
+               "echo 'Category,Estimated Budget,Actual Expense,Date,Description' > C:\Users\Administrator\Downloads\Errawrs_Weeding-Planner\budget.txt".
 
        BUDGET-MENU.
            DISPLAY "---------------------------------------------"
@@ -231,8 +231,6 @@
                        DISPLAY "---------------------------------------------"
            END-PERFORM.
 
-       CLEAR-SCREEN.
-           CALL "SYSTEM" USING "cls".
        RETURN-TO-MAIN-MENU.
            DISPLAY "Exiting Budget Tracker. Goodbye!"
            STOP RUN.
