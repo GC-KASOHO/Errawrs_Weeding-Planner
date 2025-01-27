@@ -2,3 +2,4 @@ simone                        09504426896         Confirmed
 jhon                          0967218766          confirmed
 kel                           09771515956         Confirmed
 edriane                       09298897504         Confirmed
+simone                        09771515956         Pending

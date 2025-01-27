@@ -166,9 +166,8 @@
            
            EVALUATE user-choice
                WHEN 1
-                   STRING "notepad " current-folder "\guest-list.txt"
-                       DELIMITED BY SIZE INTO os-cmd
-                   CALL "SYSTEM" USING os-cmd
+                   *> Modify this line to CALL the Guest List Management program
+                   CALL "GUEST-LIST-MANAGEMENT"
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 2
                    STRING "notepad " current-folder "\tasks.txt"
@@ -197,3 +196,5 @@
        PAUSE-SCREEN.
            DISPLAY "Press any key to continue..."
            ACCEPT PAUSE-KEY.
+
+
