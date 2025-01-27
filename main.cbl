@@ -151,6 +151,7 @@
                    PERFORM CLEAR-SCREEN
                    DISPLAY "Managing Tasks..."
                    PERFORM WEDDING-PLAN-MANAGEMENT
+                   CALL 'TASK-MANAGER'
                WHEN 3
                    PERFORM CLEAR-SCREEN
                    DISPLAY "Managing Budget..."
