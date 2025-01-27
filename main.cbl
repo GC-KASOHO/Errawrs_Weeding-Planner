@@ -5,168 +5,182 @@
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT FILE-NUMBER-FILE 
-               ASSIGN TO "./file_number.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
-
-           SELECT ACCOUNT-RECORD-FILE
-               ASSIGN TO"./account_record.txt"
+               ASSIGN TO "file_number.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
 
        DATA DIVISION.
        FILE SECTION.
        FD FILE-NUMBER-FILE.
        01 FILE-NUMBER-RECORD    PIC X(3).
-
-       FD ACCOUNT-RECORD-FILE.
-       01 ACCOUNT                PIC X(12).
-
-       WORKING-STORAGE SECTION.
-       01 user-choice           PIC 9.
-       01 CHOICE           PIC 9.
-       01 os-command            PIC X(100).
-       01 wedding-name          PIC X(50).
-       01 folder-creation-status PIC 9.
-           88 FOLDER-CREATED     VALUE 0.
-           88 FOLDER-CREATION-FAILED VALUE 1.
        
-       01 FOLDER-GENERATION-VARS.
-           05 CURRENT-YEAR        PIC X(4).
-           05 FIRST-LETTER        PIC X.
-           05 NUM-FILE-NO         PIC 999.
-           05 FILE-NUMBER         PIC X(3).
-           05 FOLDER-NAME         PIC X(12).
+       WORKING-STORAGE SECTION.
+       01 WS-CONTROL.
+           05 user-choice       PIC 9.
+           05 os-command        PIC X(100).
+           05 current-folder    PIC X(50).
+           05 temp-folder       PIC X(255).
+           
+       01 WS-FILE-CONTROL.
+           05 CURRENT-YEAR      PIC X(4).
+           05 FILE-NUMBER       PIC X(3).
+           05 NUM-FILE-NO       PIC 999.
+           05 FOLDER-NAME       PIC X(50).
+           
+       01 WS-INPUT.
+           05 WEDDING-NAME      PIC X(50).
+           05 account-num       PIC X(3).
+           
+       01 WS-FLAGS.
+           05 folder-status     PIC 9.
+           05 found-flag        PIC 9 VALUE 0.
+           
+       01 PAUSE-KEY            PIC X.
 
        PROCEDURE DIVISION.
        MAIN-MENU.
-
-           DISPLAY "--------------------------------------------------"
-           DISPLAY "                  Wedding Planner System"
-           DISPLAY "--------------------------------------------------"
+           PERFORM CLEAR-SCREEN
+           DISPLAY "Wedding Planner System"
            DISPLAY "1. Create New Wedding Plan"
            DISPLAY "2. Edit Existing Wedding Plan"
            DISPLAY "3. Exit"
-           DISPLAY "--------------------------------------------------"
-           DISPLAY "Please select an option: "
+           DISPLAY "Select option: "
            ACCEPT user-choice
 
            EVALUATE user-choice
                WHEN 1
                    PERFORM CREATE-NEW-WEDDING-PLAN
                WHEN 2
-        
-                   PERFORM WEDDING-PLAN-MANAGEMENT
+                   PERFORM EDIT-EXISTING-PLAN
                WHEN 3
-                   DISPLAY "Exiting the system. Goodbye!"
                    STOP RUN
                WHEN OTHER
-                   DISPLAY "Invalid option. Please try again."
                    PERFORM MAIN-MENU
            END-EVALUATE.
 
        CREATE-NEW-WEDDING-PLAN.
-
-           DISPLAY "Enter the name for your wedding plan: "
-           ACCEPT wedding-name
+           PERFORM CLEAR-SCREEN
+           DISPLAY "Enter wedding plan name: "
+           ACCEPT WEDDING-NAME
 
            PERFORM CREATE-WEDDING-FOLDER
-
-           DISPLAY "Wedding plan folder created successfully!"
-           DISPLAY "Your account number is: "
-           DISPLAY NUM-FILE-NO.
-
-           PERFORM  RECORD-ACCOUNT.
            
+           STRING "Archives\" FOLDER-NAME DELIMITED BY SIZE 
+               INTO current-folder
+           
+           PERFORM CREATE-MANAGEMENT-FILES
+           
+           DISPLAY "Wedding plan created! Folder: " FOLDER-NAME
+           DISPLAY "Account number: " FILE-NUMBER
+           PERFORM PAUSE-SCREEN
            PERFORM WEDDING-PLAN-MANAGEMENT.
 
        CREATE-WEDDING-FOLDER.
            MOVE FUNCTION CURRENT-DATE(1:4) TO CURRENT-YEAR
-           MOVE FUNCTION UPPER-CASE(wedding-name(1:1)) TO FIRST-LETTER
-           
            PERFORM READ-AND-INCREMENT-FILE-NUMBER
            
-           STRING CURRENT-YEAR "-" FILE-NUMBER "-" FIRST-LETTER 
+           STRING CURRENT-YEAR "-" FILE-NUMBER "-" WEDDING-NAME 
                DELIMITED BY SIZE INTO FOLDER-NAME
            
            STRING "mkdir Archives\" FOLDER-NAME 
-                   DELIMITED BY SIZE INTO os-command
+               DELIMITED BY SIZE INTO os-command
            
-           CALL "SYSTEM" USING os-command
-                   RETURNING folder-creation-status
-           
-           IF folder-creation-status = 0
-                   PERFORM UPDATE-FILE-NUMBER
-           ELSE
-                   DISPLAY "Failed to create folder"
-           END-IF.
-       
+           CALL "SYSTEM" USING os-command.
+
+       CREATE-MANAGEMENT-FILES.
+           STRING "cd " current-folder " && "
+                 "echo. > guest-list.txt && "
+                 "echo. > tasks.txt && "
+                 "echo. > budget.txt && "
+                 "echo. > events.txt"
+               DELIMITED BY SIZE INTO os-command
+           CALL "SYSTEM" USING os-command.
+
        READ-AND-INCREMENT-FILE-NUMBER.
-           MOVE ZEROS TO NUM-FILE-NO
-           OPEN INPUT FILE-NUMBER-FILE
+           OPEN I-O FILE-NUMBER-FILE
            READ FILE-NUMBER-FILE
-        
-           MOVE FILE-NUMBER-RECORD TO FILE-NUMBER
-           COMPUTE NUM-FILE-NO = FUNCTION NUMVAL(FILE-NUMBER)
+               AT END
+                   MOVE "000" TO FILE-NUMBER
+               NOT AT END
+                   MOVE FILE-NUMBER-RECORD TO FILE-NUMBER
+           END-READ
            
-           CLOSE FILE-NUMBER-FILE
+           COMPUTE NUM-FILE-NO = FUNCTION NUMVAL(FILE-NUMBER) + 1
+           MOVE NUM-FILE-NO TO FILE-NUMBER
            
-           ADD 1 TO NUM-FILE-NO
-
-           MOVE NUM-FILE-NO TO FILE-NUMBER.
-
-       UPDATE-FILE-NUMBER.
-           OPEN OUTPUT FILE-NUMBER-FILE
-           MOVE FILE-NUMBER TO FILE-NUMBER-RECORD
-           WRITE FILE-NUMBER-RECORD
+           REWRITE FILE-NUMBER-RECORD FROM FILE-NUMBER
            CLOSE FILE-NUMBER-FILE.
 
-       RECORD-ACCOUNT.
-           OPEN OUTPUT ACCOUNT-RECORD-FILE
-        
-           STRING CURRENT-YEAR "-" FILE-NUMBER "-" FIRST-LETTER 
-               DELIMITED BY SIZE INTO ACCOUNT
+       EDIT-EXISTING-PLAN.
+           PERFORM CLEAR-SCREEN
+           DISPLAY "Enter account number (3 digits only): "
+           ACCEPT account-num
            
-           WRITE ACCOUNT
-           CLOSE ACCOUNT-RECORD-FILE.
-
+           MOVE FUNCTION CURRENT-DATE(1:4) TO CURRENT-YEAR
+           
+           STRING "dir /b Archives\" CURRENT-YEAR "-" 
+               account-num "-* > temp.txt 2>&1"
+               DELIMITED BY SIZE INTO os-command
+           CALL "SYSTEM" USING os-command
+           
+           OPEN INPUT FILE-NUMBER-FILE
+           READ FILE-NUMBER-FILE INTO temp-folder
+           CLOSE FILE-NUMBER-FILE
+           
+           IF temp-folder NOT = SPACES
+               STRING "Archives\" CURRENT-YEAR "-" account-num "-*"
+                   DELIMITED BY SIZE INTO current-folder
+               DISPLAY "Account found!"
+               PERFORM PAUSE-SCREEN
+               PERFORM WEDDING-PLAN-MANAGEMENT
+           ELSE
+               DISPLAY "Account not found."
+               PERFORM PAUSE-SCREEN
+               PERFORM MAIN-MENU
+           END-IF
+           
+           STRING "del temp.txt" DELIMITED BY SIZE INTO os-command
+           CALL "SYSTEM" USING os-command.
 
        WEDDING-PLAN-MANAGEMENT.
            PERFORM CLEAR-SCREEN
-
-           DISPLAY "--------------------------------------------------"
-           DISPLAY "                 Wedding Plan Management"
-           DISPLAY "--------------------------------------------------"
+           DISPLAY "Wedding Plan Management"
            DISPLAY "1. Manage Guest List"
            DISPLAY "2. Manage Tasks"
            DISPLAY "3. Budget Tracker"
-           DISPLAY "4. Vendor Management"
+           DISPLAY "4. Event Management"
            DISPLAY "5. Back to Main Menu"
-           DISPLAY "--------------------------------------------------"
-           DISPLAY "Please select an option: "
-           ACCEPT CHOICE
+           ACCEPT user-choice
            
-           PERFORM CLEAR-SCREEN
-
-           EVALUATE CHOICE
+           EVALUATE user-choice
                WHEN 1
-                   DISPLAY "Managing Guest List..."
+                   STRING "notepad " current-folder "\guest-list.txt"
+                       DELIMITED BY SIZE INTO os-command
+                   CALL "SYSTEM" USING os-command
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 2
-                   DISPLAY "Managing Tasks..."
+                   STRING "notepad " current-folder "\tasks.txt"
+                       DELIMITED BY SIZE INTO os-command
+                   CALL "SYSTEM" USING os-command
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 3
-                   DISPLAY "Managing Budget..."
+                   STRING "notepad " current-folder "\budget.txt"
+                       DELIMITED BY SIZE INTO os-command
+                   CALL "SYSTEM" USING os-command
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 4
-                   DISPLAY "Managing Events..."
+                   STRING "notepad " current-folder "\events.txt"
+                       DELIMITED BY SIZE INTO os-command
+                   CALL "SYSTEM" USING os-command
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 5
-                   DISPLAY "Returning to Main Menu..."
                    PERFORM MAIN-MENU
                WHEN OTHER
-                   DISPLAY "Invalid option. Please try again."
                    PERFORM WEDDING-PLAN-MANAGEMENT
            END-EVALUATE.
 
        CLEAR-SCREEN.
-           CALL 'SYSTEM' USING 'cls'.
-           
+           CALL "SYSTEM" USING "cls".
+
+       PAUSE-SCREEN.
+           DISPLAY "Press any key to continue..."
+           ACCEPT PAUSE-KEY.
