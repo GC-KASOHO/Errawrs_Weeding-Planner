@@ -8,15 +8,22 @@
                ASSIGN TO "file_number.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
 
+           SELECT TEMP-FILE 
+               ASSIGN TO "temp.txt"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
        DATA DIVISION.
        FILE SECTION.
        FD FILE-NUMBER-FILE.
        01 FILE-NUMBER-RECORD    PIC X(3).
-       
+
+       FD TEMP-FILE.
+       01 TEMP-FILE-RECORD      PIC X(255).
+
        WORKING-STORAGE SECTION.
        01 WS-CONTROL.
            05 user-choice       PIC 9.
-           05 os-command        PIC X(100).
+           05 os-cmd        PIC X(100).
            05 current-folder    PIC X(50).
            05 temp-folder       PIC X(255).
            
@@ -35,6 +42,7 @@
            05 found-flag        PIC 9 VALUE 0.
            
        01 PAUSE-KEY            PIC X.
+       01 ERROR-CHECK          PIC X(15).
 
        PROCEDURE DIVISION.
        MAIN-MENU.
@@ -67,8 +75,6 @@
            STRING "Archives\" FOLDER-NAME DELIMITED BY SIZE 
                INTO current-folder
            
-           PERFORM CREATE-MANAGEMENT-FILES
-           
            DISPLAY "Wedding plan created! Folder: " FOLDER-NAME
            DISPLAY "Account number: " FILE-NUMBER
            PERFORM PAUSE-SCREEN
@@ -82,18 +88,9 @@
                DELIMITED BY SIZE INTO FOLDER-NAME
            
            STRING "mkdir Archives\" FOLDER-NAME 
-               DELIMITED BY SIZE INTO os-command
+               DELIMITED BY SIZE INTO os-cmd
            
-           CALL "SYSTEM" USING os-command.
-
-       CREATE-MANAGEMENT-FILES.
-           STRING "cd " current-folder " && "
-                 "echo. > guest-list.txt && "
-                 "echo. > tasks.txt && "
-                 "echo. > budget.txt && "
-                 "echo. > events.txt"
-               DELIMITED BY SIZE INTO os-command
-           CALL "SYSTEM" USING os-command.
+           CALL "SYSTEM" USING os-cmd.
 
        READ-AND-INCREMENT-FILE-NUMBER.
            OPEN I-O FILE-NUMBER-FILE
@@ -119,27 +116,43 @@
            
            STRING "dir /b Archives\" CURRENT-YEAR "-" 
                account-num "-* > temp.txt 2>&1"
-               DELIMITED BY SIZE INTO os-command
-           CALL "SYSTEM" USING os-command
+               DELIMITED BY SIZE INTO os-cmd
+           CALL "SYSTEM" USING os-cmd
            
-           OPEN INPUT FILE-NUMBER-FILE
-           READ FILE-NUMBER-FILE INTO temp-folder
-           CLOSE FILE-NUMBER-FILE
+           OPEN INPUT TEMP-FILE
+           READ TEMP-FILE INTO temp-folder
+               AT END
+                   MOVE SPACES TO temp-folder
+           END-READ
            
-           IF temp-folder NOT = SPACES
-               STRING "Archives\" CURRENT-YEAR "-" account-num "-*"
-                   DELIMITED BY SIZE INTO current-folder
-               DISPLAY "Account found!"
-               PERFORM PAUSE-SCREEN
-               PERFORM WEDDING-PLAN-MANAGEMENT
-           ELSE
+           MOVE temp-folder(1:15) TO ERROR-CHECK
+           
+           IF ERROR-CHECK = "File Not Found "
                DISPLAY "Account not found."
                PERFORM PAUSE-SCREEN
+               CLOSE TEMP-FILE
+               STRING "del temp.txt" DELIMITED BY SIZE INTO os-cmd
+               CALL "SYSTEM" USING os-cmd
                PERFORM MAIN-MENU
-           END-IF
-           
-           STRING "del temp.txt" DELIMITED BY SIZE INTO os-command
-           CALL "SYSTEM" USING os-command.
+           ELSE
+               IF temp-folder NOT = SPACES
+                   STRING "Archives\" CURRENT-YEAR "-" account-num "-*"
+                       DELIMITED BY SIZE INTO current-folder
+                   DISPLAY "Account found!"
+                   CLOSE TEMP-FILE
+                   STRING "del temp.txt" DELIMITED BY SIZE INTO os-cmd
+                   CALL "SYSTEM" USING os-cmd
+                   PERFORM PAUSE-SCREEN
+                   PERFORM WEDDING-PLAN-MANAGEMENT
+               ELSE
+                   DISPLAY "Account not found."
+                   CLOSE TEMP-FILE
+                   STRING "del temp.txt" DELIMITED BY SIZE INTO os-cmd
+                   CALL "SYSTEM" USING os-cmd
+                   PERFORM PAUSE-SCREEN
+                   PERFORM MAIN-MENU
+               END-IF
+           END-IF.
 
        WEDDING-PLAN-MANAGEMENT.
            PERFORM CLEAR-SCREEN
@@ -154,23 +167,23 @@
            EVALUATE user-choice
                WHEN 1
                    STRING "notepad " current-folder "\guest-list.txt"
-                       DELIMITED BY SIZE INTO os-command
-                   CALL "SYSTEM" USING os-command
+                       DELIMITED BY SIZE INTO os-cmd
+                   CALL "SYSTEM" USING os-cmd
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 2
                    STRING "notepad " current-folder "\tasks.txt"
-                       DELIMITED BY SIZE INTO os-command
-                   CALL "SYSTEM" USING os-command
+                       DELIMITED BY SIZE INTO os-cmd
+                   CALL "SYSTEM" USING os-cmd
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 3
                    STRING "notepad " current-folder "\budget.txt"
-                       DELIMITED BY SIZE INTO os-command
-                   CALL "SYSTEM" USING os-command
+                       DELIMITED BY SIZE INTO os-cmd
+                   CALL "SYSTEM" USING os-cmd
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 4
                    STRING "notepad " current-folder "\events.txt"
-                       DELIMITED BY SIZE INTO os-command
-                   CALL "SYSTEM" USING os-command
+                       DELIMITED BY SIZE INTO os-cmd
+                   CALL "SYSTEM" USING os-cmd
                    PERFORM WEDDING-PLAN-MANAGEMENT
                WHEN 5
                    PERFORM MAIN-MENU
