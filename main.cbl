@@ -131,7 +131,7 @@
            MOVE FILE-NUMBER TO FILE-NUMBER-RECORD
            WRITE FILE-NUMBER-RECORD
            CLOSE FILE-NUMBER-FILE.
-
+        
        WEDDING-PLAN-MANAGEMENT.
            PERFORM CLEAR-SCREEN
            DISPLAY "--------------------------------------------------"
